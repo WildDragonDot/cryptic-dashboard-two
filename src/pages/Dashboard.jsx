@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Lottie from "lottie-react";
+import Dboard from "./json/Dashboard.json";
 import CountUp from "react-countup";
 import { useNavigate } from "react-router-dom";
 import { Stacked, Pie, LineChart } from "../components";
@@ -233,8 +235,11 @@ const Dashboard = () => {
   return (
     <div className="mt-20">
       {/* <Header title="Dashboard"/> */}
-      <div className="setStylecardContainer flex flex-wrap lg:flex-nowrap justify-center ">
-        <div className="flex m-3 flex-wrap justify-center gap-10 items-center">
+      <div className="setStylecardContainer flex flex-col flex-wrap md:flex-row lg:flex-nowrap lg:flex-row ">
+        <div className="flex justify-center items-center object-center md:w-full m-4  lg:w-2/4">
+        <Lottie className=" h-full w-full" animationData={Dboard} loop={true} />
+        </div>
+        <div className="flex m-3 flex-wrap lg:w-2/4 justify-center gap-10 items-center">
           {data.map((item) => (
             <div
               key={item.title}

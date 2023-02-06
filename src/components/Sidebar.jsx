@@ -3,10 +3,14 @@ import { Link, NavLink } from 'react-router-dom';
 import { FaRupeeSign } from 'react-icons/fa';
 import { MdOutlineCancel } from 'react-icons/md';
 import { TooltipComponent } from '@syncfusion/ej2-react-popups';
-
 import { links } from '../data/dummy';
+import lottie from 'lottie-web';
+import { defineElement } from 'lord-icon-element';
 import { useStateContext } from '../contexts/ContextProvider';
 
+
+// define "lord-icon" custom element with default properties
+defineElement(lottie.loadAnimation);
 const Sidebar = () => {
   const { currentColor, activeMenu, setActiveMenu, screenSize } = useStateContext();
 
@@ -25,7 +29,7 @@ const Sidebar = () => {
         <>
           <div className="flex justify-between items-center">
             <Link to="/" onClick={handleCloseSideBar} className="items-center gap-3 ml-3 mt-4 flex text-xl font-extrabold tracking-tight dark:text-white text-slate-900">
-              <FaRupeeSign /> <span style={{ fontSize: '1.5rem', marginLeft: '-0.5rem' }}>Finflix</span>
+              <FaRupeeSign /> <span style={{ fontSize: '1.5rem', marginLeft: '-0.5rem' }}>CrypTic</span>
             </Link>
             <TooltipComponent content="Menu" position="BottomCenter">
               <button

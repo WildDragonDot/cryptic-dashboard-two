@@ -78,10 +78,10 @@ const DualAuth = () => {
           <div className="absolute bg-gradient-to-b from-indigo-600 to-blue-500 opacity-75 inset-0 z-0"></div>
           <div className="w-full  max-w-md z-10">
             <div className="sm:text-4xl xl:text-5xl font-bold leading-tight mb-6">
-              Finflix Dashboard
+              Crytpic Dashboard
             </div>
             <div className="sm:text-sm xl:text-md text-gray-200 font-normal">
-              Finflix is a decentrlize video ott plateform. where you can learn
+              Cryptic is a decentrlize video ott plateform. where you can learn
               about crypto.
             </div>
           </div>
@@ -98,13 +98,13 @@ const DualAuth = () => {
             <li></li>
           </ul>
         </div>
-        <div className="md:flex md:items-center md:justify-center w-full sm:w-auto md:h-full xl:w-2/5 p-8  md:p-10 lg:p-14 sm:rounded-lg md:rounded-none bg-white">
+        <div className="md:flex md:items-center md:justify-center w-full sm:w-auto md:h-full xl:w-2/5 p-8  md:p-10 lg:p-14 sm:rounded-lg md:rounded-none  bg-slate-900">
           <div className="max-w-md w-full space-y-8">
             <div className="text-center">
-              <h2 className="mt-6 text-3xl font-bold text-gray-900">
+              <h2 className="mt-6 text-3xl font-bold text-white">
                 Password Authentication
               </h2>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-gray-300">
                 Please login with your username and password
               </p>
             </div>

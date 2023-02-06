@@ -28,8 +28,13 @@ const Sidebar = () => {
       {activeMenu && (
         <>
           <div className="flex justify-between items-center">
+<<<<<<< HEAD
             <Link to="/" onClick={handleCloseSideBar} className="items-center gap-3 ml-3 mt-4 flex text-xl font-extrabold tracking-tight dark:text-white text-slate-900">
               <FaRupeeSign /> <span style={{ fontSize: '1.5rem', marginLeft: '-0.5rem' }}>CrypTic</span>
+=======
+            <Link to="" onClick={handleCloseSideBar} className="items-center gap-3 ml-3 mt-4 flex text-xl font-extrabold tracking-tight dark:text-white text-slate-900">
+              <FaRupeeSign /> <span style={{ fontSize: '1.5rem', marginLeft: '-0.5rem' }}>CryPtic</span>
+>>>>>>> 3231190e6a4307692eae57846338c234e35ffa7d
             </Link>
             <TooltipComponent content="Menu" position="BottomCenter">
               <button

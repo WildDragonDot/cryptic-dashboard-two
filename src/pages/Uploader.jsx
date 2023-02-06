@@ -17,23 +17,31 @@ function getAccessToken() {
   return process.env.REACT_APP_WEBTHREETOKEN;
 }
 
+
 function makeStorageClient() {
   return new Web3Storage({ token: getAccessToken() });
 }
 
 const projectId = process.env.REACT_APP_IPFS_PROJECT_ID;
 const projectSecret = process.env.REACT_APP_IPFS_SECRET_KEY;
-const auth =
-  "Basic " + Buffer.from(projectId + ":" + projectSecret).toString("base64");
+const auth = " Basic " + Buffer.from(projectId + ":" + projectSecret).toString("base64");
 
-const client = create({
-  host: "ipfs.infura.io",
-  port: 5001,
-  protocol: "https",
-  headers: {
-    authorization: auth,
-  },
-});
+
+
+
+
+
+async function downloadYoutubeVideo(youtubeUrl) {
+  try {
+    const response = await axios.post('http://localhost:5000/download-video', { youtubeUrl }, { responseType: 'blob' });
+    console.log(response)
+    const file = new File([response.data], 'video.mp4', { type: 'video/mp4' });
+    console.log(file)
+    return file;
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 const Uploader = () => {
   const navigate = useNavigate();
@@ -49,6 +57,16 @@ const Uploader = () => {
   const [imageFileName, setImageFileName] = useState("");
   const [videoProgress, setVideoProgress] = useState(null);
   const [imageProgress, setImageProgress] = useState(null);
+  // for switch button
+  const [displayDiv, setDisplayDiv] = useState(1);
+  // for youtube video upload
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [url, setUrl] = useState('');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+
+
+
 
   function videoUploadSuccess() {
     setVideoTitle("");
@@ -62,6 +80,221 @@ const Uploader = () => {
     setVideoProgress(null);
     setImageProgress(null);
   }
+
+  // for switch button function
+  function handleClick() {
+    setDisplayDiv(displayDiv === 1 ? 2 : 1); // toggle between 1 and 2
+  }
+
+
+  // const handleChangeYoutubeVideo = (event) => {
+  //   setYoutubeUrl(event.target.value);
+  // };
+  const handleChangeYoutubeVideo = (event) => {
+    setUrl(event.target.value);
+  }
+
+  const handleUploadYoutubeVideo = async (event) => {
+    event.preventDefault();
+
+    setIsDownloading(true);
+
+    // Extract the video ID from the URL using a regular expression
+    const videoIdRegex = /watch\?v=([^&]+)/;
+    const videoIdMatch = url.match(videoIdRegex);
+    if (!videoIdMatch) {
+      //   setError(new Error('Invalid YouTube video URL'));
+      return;
+    }
+    const videoId = videoIdMatch[1];
+
+    const options = {
+      method: 'GET',
+      url: 'https://ytstream-download-youtube-videos.p.rapidapi.com/dl',
+      params: { id: videoId },
+      headers: {
+        'X-RapidAPI-Key': 'fb0b11139cmshb5690de121acecfp18077djsnac95bc0d721b',
+        'X-RapidAPI-Host': 'ytstream-download-youtube-videos.p.rapidapi.com'
+      }
+    };
+
+    try {
+      const response = await axios.request(options);
+      console.log(response.data);
+      const videoId = response.data.id;
+      const imageUrl = response.data.thumbnail[1].url;
+      const title = response.data.title;
+      const description = response.data.description;
+      console.log(`${title} and ${description}`);
+      const downloadUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      let fileName = title.replace(/\s/g, "%20");
+      fileName = fileName.replace(/#/g, "%23");
+      // Download the video file using the URL
+      var FormData = require("form-data");
+      var data = new FormData();
+      const resp = await fetch(downloadUrl);
+      const blob = await resp.blob();
+      console.log(blob);
+      const fileInput = blob.slice(0, blob.size, 'video/mp4');
+      console.log(fileInput);
+      const client = makeStorageClient();
+      // Upload the video file to web3 storage
+      const rootCid = await client.put([fileInput]);
+      console.log(rootCid);
+      const info = await client.status(rootCid);
+      console.log(info);
+      const VideoUrl = `https://${rootCid}.ipfs.w3s.link/${fileName}`;
+      console.log(VideoUrl)
+      toast.success("Video uploaded successfully!", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+      // Download the image file using the URL
+      const imageResp = await fetch(imageUrl);
+      const imageBlob = await imageResp.blob();
+      console.log(imageBlob);
+      const imageFileInput = imageBlob.slice(0, imageBlob.size, 'image/jpeg'); // or 'image/png', depending on the image format
+      console.log(imageFileInput);
+
+      // Upload the image file to web3 storage
+      const imageRootCid = await client.put([imageFileInput]);
+      console.log(imageRootCid);
+      const imageInfo = await client.status(imageRootCid);
+      console.log(imageInfo);
+      const ImageUrl = `https://${imageRootCid}.ipfs.w3s.link/${fileName}`;
+      console.log(ImageUrl)
+      let videoCategory = "youtubevideos";
+      data.append("category", videoCategory);
+      data.append("name", title);
+      data.append("video_desc", description);
+      data.append("video_uid", VideoUrl);
+      data.append("thumbnail_ipfs", ImageUrl);
+      data.append("user_address", account);
+      data.append("user_type", "admin");
+
+      var config = {
+        method: "post",
+        url: `${process.env.REACT_APP_LOCALHOST_URL}/php/API/upload_video`,
+        data: data,
+      };
+      axios(config)
+        .then(function (response) {
+          videoUploadSuccess();
+          setVideoUploading(false);
+          swal({
+            title: "Video Uploaded Successfully",
+            icon: "success",
+            button: "Ok",
+          })
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error uploading video or image : " + error.message, {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+
+  // const handleUploadYoutubeVideo = async () => {
+  //   try {
+
+  //     // Download the video from YouTube and get the file object
+  //     const fileInput = await downloadYoutubeVideo(youtubeUrl);
+  //     const client = makeStorageClient();
+  //     let fileName = fileInput.name.replace(/\s/g, "%20");
+  //       fileName = fileName.replace(/#/g, "%23");
+  //   //   console.warn(file)
+  //   const totalSize = fileInput.size;
+  //   let uploaded = 0;
+  //   const onStoredChunk = (size) => {
+  //     uploaded += size;
+  //     const pct = 100 * (uploaded / totalSize);
+  //     setVideoProgress(pct.toFixed(2));
+  //   };
+  //   const rootCid = await client.put([fileInput], {
+  //     onStoredChunk,
+  //   });
+  //   const VideoUrl = `https://${rootCid}.ipfs.w3s.link/${fileName}`;
+  //   console.log(VideoUrl)
+  //   const info = await client.status(rootCid);
+  //   console.log(info);
+  //   toast.success("Video uploaded successfully!", {
+  //     position: toast.POSITION.TOP_RIGHT,
+  //   });
+  //   data.append("video_uid", VideoUrl);
+  //   var config = {
+  //     method: "post",
+  //     url: `${process.env.REACT_APP_LOCALHOST_URL}/php/API/upload_youtube_video`,
+  //     data: data,
+  //   };
+  //   axios(config)
+  //             .then(function (response) {
+  //               // videoUploadSuccess();
+  //               // setVideoUploading(false);
+  //               swal({
+  //                 title: "YouTube Video Uploaded Successfully",
+  //                 icon: "success",
+  //                 button: "Ok",
+  //               }).then(() => {
+  //                 // navigate("/videos");
+  //               });
+  //             })
+  //             .catch(function (error) {
+  //               console.log(error);
+  //             });
+  //   //   // Fetch and verify the file object from web3.storage
+  //     // const res = await client.get(rootCid);
+  //     // const files = await res.files();
+  //     // for (const file of files) {
+  //     //   console.log(`${file.cid} ${file.name} ${file.size}`);
+  //     // }
+  //   } catch (error) {
+  //     toast.error("Error uploading video: " + error.message, {
+  //       position: toast.POSITION.TOP_RIGHT,
+  //     });
+  //   }
+  // };
+
+
+  // for youtube video id 
+  // const handleSubmitYoutubeVideo = (event) => {
+  //   event.preventDefault();
+
+  //   // Extract the video ID from the URL using a regular expression
+  //   const videoIdRegex = /watch\?v=([^&]+)/;
+  //   const videoIdMatch = url.match(videoIdRegex);
+  //   if (!videoIdMatch) {
+  //     setError(new Error('Invalid YouTube video URL'));
+  //     return;
+  //   }
+  //   const videoId = videoIdMatch[1];
+
+  //   const options = {
+  //     method: 'GET',
+  //     url: 'https://ytstream-download-youtube-videos.p.rapidapi.com/dl',
+  //     params: { id: videoId },
+  //     headers: {
+  //       'X-RapidAPI-Key': 'fb0b11139cmshb5690de121acecfp18077djsnac95bc0d721b',
+  //       'X-RapidAPI-Host': 'ytstream-download-youtube-videos.p.rapidapi.com'
+  //     }
+  //   };
+
+  //   axios.request(options)
+  //     .then(function (response) {
+  //       // setResponseData(response.data);
+  //       console.log(response.data)
+  //     })
+  //     .catch(function (error) {
+  //       setError(error);
+  //     });
+  // }
+  // end of youtube video id
 
   function handleFileChange(target, setter) {
     setVideoFileName(target.files[0].name);
@@ -93,7 +326,9 @@ const Uploader = () => {
       // Web3Storage video upload start
       try {
         const fileInput = document.querySelector("#input_video");
+        console.log(fileInput)
         const files = fileInput.files;
+        console.log(files)
         const onRootCidReady = (cid) => {
           console.log("uploading files with cid:", cid);
         };
@@ -113,7 +348,7 @@ const Uploader = () => {
           onStoredChunk,
         });
         const VideoUrl = `https://${IpfsCid}.ipfs.w3s.link/${fileName}`;
-
+        console.log(VideoUrl)
         imageUpload(VideoUrl);
       } catch (error) {
         console.log("Error uploading file: ", error);
@@ -178,7 +413,7 @@ const Uploader = () => {
                   icon: "success",
                   button: "Ok",
                 }).then(() => {
-                  navigate("/videos");
+                  // navigate("/videos");
                 });
               })
               .catch(function (error) {
@@ -322,76 +557,87 @@ const Uploader = () => {
             </p>
           </div>
           <div className="flex items-center justify-center">
-            <div className="mx-auto w-full max-w-[550px]">
-              <form
-                className="py-6 px-9"
-                action="https://formbold.com/s/FORM_ID"
-                method="POST"
-              >
-                <div className="mb-5" id="select">
-                  <label
-                    htmlFor="countries"
-                    className="mb-3 block text-base font-medium "
-                  >
-                    Select an option
-                  </label>
-                  <select
-                    id="countries"
-                    className="w-full rounded-md border border-[#e0e0e0]  py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select category"
-                    onChange={(e) => handleChange(e.target, setVideoCategory)}
-                  >
-                    <option defaultValue>Choose video category</option>
-                    <option value="927f0965-6eed-462c-bfa0-79867c9f9448">Explainers</option>
-                    <option value="fd3d24bd-8764-494e-9ade-40911b8e11a1">Tutorials</option>
-                    <option value="5dae4ba7-933a-40a9-8866-49ee971ccf87">Review</option>
-                    <option value="5822014a-02af-41c4-8564-0ec4ceba8db6">News</option>
-                    <option value="0f01d804-648d-42a7-ab11-bdc373f4b7bd">Others</option>
-                  </select>
-                </div>
-                <div className="mb-5" id="title-container">
-                  <label
-                    htmlFor="title"
-                    className="mb-3 block font-medium text-base"
-                  >
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={videoTitle}
-                    onChange={(e) => handleChange(e.target, setVideoTitle)}
-                    id="title"
-                    placeholder="Video Title"
-                    className="w-full rounded-md border border-[#e0e0e0]  py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
+            <button
+              type="button"
+              className="hover:shadow-form w-2/6 rounded-md  py-3 px-8 text-center text-base font-semibold text-white outline-none opacity-70 transition ease-in-out duration-150 "
+              onClick={handleClick}
+              style={{ background: currentColor }}
+            >
+              Switch
+            </button>
+          </div>
+          {displayDiv === 1 ?
+            <div className="flex items-center justify-center">
+              <div className="mx-auto w-full max-w-[550px]">
+                <form
+                  className="py-6 px-9"
+                  action="https://formbold.com/s/FORM_ID"
+                  method="POST"
+                >
+                  <div className="mb-5" id="select">
+                    <label
+                      htmlFor="countries"
+                      className="mb-3 block text-base font-medium "
+                    >
+                      Select an option
+                    </label>
+                    <select
+                      id="countries"
+                      className="w-full rounded-md border border-[#e0e0e0]  py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
+                      placeholder="Select category"
+                      onChange={(e) => handleChange(e.target, setVideoCategory)}
+                    >
+                      <option defaultValue>Choose video category</option>
+                      <option value="927f0965-6eed-462c-bfa0-79867c9f9448">Music</option>
+                      <option value="fd3d24bd-8764-494e-9ade-40911b8e11a1">Teasers</option>
+                      <option value="5dae4ba7-933a-40a9-8866-49ee971ccf87">Metaverse</option>
+                      <option value="5822014a-02af-41c4-8564-0ec4ceba8db6">News</option>
+                      <option value="0f01d804-648d-42a7-ab11-bdc373f4b7bd">Webseries</option>
+                    </select>
+                  </div>
+                  <div className="mb-5" id="title-container">
+                    <label
+                      htmlFor="title"
+                      className="mb-3 block font-medium text-base"
+                    >
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={videoTitle}
+                      onChange={(e) => handleChange(e.target, setVideoTitle)}
+                      id="title"
+                      placeholder="Video Title"
+                      className="w-full rounded-md border border-[#e0e0e0]  py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
+                    />
+                  </div>
 
-                <div className="mb-5" id="description-container">
-                  <label
-                    htmlFor="email"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Description
-                  </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => handleChange(e.target, setDescription)}
-                    id="description"
-                    rows="3"
-                    className="w-full rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Video Description..."
-                  ></textarea>
-                </div>
+                  <div className="mb-5" id="description-container">
+                    <label
+                      htmlFor="email"
+                      className="mb-3 block text-base font-medium"
+                    >
+                      Description
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => handleChange(e.target, setDescription)}
+                      id="description"
+                      rows="3"
+                      className="w-full rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
+                      placeholder="Video Description..."
+                    ></textarea>
+                  </div>
 
-                <div className="mb-5" id="image-container">
-                  {/* <span>
+                  <div className="mb-5" id="image-container">
+                    {/* <span>
                     {imageFileName == "" ? "No File Selected" : imageFileName}
                   </span> */}
-                  {!imageProgress ? (
-                    <>
-                      <div id="image">
-                        {/* <label
+                    {!imageProgress ? (
+                      <>
+                        <div id="image">
+                          {/* <label
                         className="file-input__label mt-2"
                         htmlFor="input_thumbnail"
                       >
@@ -422,54 +668,54 @@ const Uploader = () => {
                         }
                         accept="image/*"
                       /> */}
-                        <div className="col-md-12">
-                          <div className="form-group">
-                            <label htmlFor="thumbnail">Thumbnail</label>
-                            <div className="drop-zone">
-                              <span className="drop-zone__prompt">
-                                <i className="fa-solid fa-cloud-arrow-up icon"></i>
-                                <br />
-                                Drop thumbnail here or click to upload
-                              </span>
-                              <input
-                                type="file"
-                                name="thumbnail"
-                                id="input_thumbnail"
-                                className="drop-zone__input"
-                                required
-                                onChange={(e) =>
-                                  handleFileChangeImage(e.target, setImageFile)
-                                }
-                                accept="image/*"
-                              />
+                          <div className="col-md-12">
+                            <div className="form-group">
+                              <label htmlFor="thumbnail">Thumbnail</label>
+                              <div className="drop-zone">
+                                <span className="drop-zone__prompt">
+                                  <i className="fa-solid fa-cloud-arrow-up icon"></i>
+                                  <br />
+                                  Drop thumbnail here or click to upload
+                                </span>
+                                <input
+                                  type="file"
+                                  name="thumbnail"
+                                  id="input_thumbnail"
+                                  className="drop-zone__input"
+                                  required
+                                  onChange={(e) =>
+                                    handleFileChangeImage(e.target, setImageFile)
+                                  }
+                                  accept="image/*"
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="mt-2">
-                        Thumbnail uploading in progress... {imageProgress}%
-                      </p>
-                      <Line
-                        percent={imageProgress}
-                        strokeWidth={3}
-                        strokeColor={currentColor}
-                        className="mt-2"
-                      />
-                    </>
-                  )}
-                </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mt-2">
+                          Thumbnail uploading in progress... {imageProgress}%
+                        </p>
+                        <Line
+                          percent={imageProgress}
+                          strokeWidth={3}
+                          strokeColor={currentColor}
+                          className="mt-2"
+                        />
+                      </>
+                    )}
+                  </div>
 
-                <div className="mb-5" id="video-container">
-                  {/* <span>
+                  <div className="mb-5" id="video-container">
+                    {/* <span>
                     {videoFileName == "" ? "No File Selected" : videoFileName}
                   </span> */}
-                  {!videoProgress ? (
-                    <>
-                      <div id="video">
-                        {/* <label
+                    {!videoProgress ? (
+                      <>
+                        <div id="video">
+                          {/* <label
                           className="file-input__label mt-2"
                           htmlFor="input_video"
                         >
@@ -499,115 +745,131 @@ const Uploader = () => {
                           }
                           accept="video/*"
                         /> */}
-                        <div className="col-md-12">
-                          <div className="form-group">
-                            <label htmlFor="video">Video</label>
-                            <div className="drop-zone">
-                              <span className="drop-zone__prompt">
-                                <i className="fa-solid fa-cloud-arrow-up icon"></i>
-                                <br />
-                                Drop video here or click to upload
+                          <div className="col-md-12">
+                            <div className="form-group">
+                              <label htmlFor="video">Video</label>
+                              <div className="drop-zone">
+                                <span className="drop-zone__prompt">
+                                  <i className="fa-solid fa-cloud-arrow-up icon"></i>
+                                  <br />
+                                  Drop video here or click to upload
+                                </span>
+                                <input
+                                  type="file"
+                                  name="video"
+                                  id="input_video"
+                                  onChange={(e) =>
+                                    handleFileChange(e.target, setVideoFile)
+                                  }
+                                  className="drop-zone__input"
+                                  required
+                                  accept="video/*"
+                                />
+                              </div>
+                              <span
+                                className="my-1"
+                                style={{ fontSize: "12px", color: currentColor }}
+                              >
+                                <i
+                                  className="fa fa-info-circle"
+                                  aria-hidden="true"
+                                ></i>{" "}
+                                Video size should be less than 100 mb
                               </span>
-                              <input
-                                type="file"
-                                name="video"
-                                id="input_video"
-                                onChange={(e) =>
-                                  handleFileChange(e.target, setVideoFile)
-                                }
-                                className="drop-zone__input"
-                                required
-                                accept="video/*"
-                              />
                             </div>
-                            <span
-                              className="my-1"
-                              style={{fontSize:"12px", color: currentColor}}
-                            >
-                              <i
-                                className="fa fa-info-circle"
-                                aria-hidden="true"
-                              ></i>{" "}
-                              Video size should be less than 100 mb
-                            </span>
                           </div>
                         </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="mt-2">
-                        Video uploading in progress... {videoProgress}%
-                      </p>
-                      <Line
-                        percent={videoProgress}
-                        strokeWidth={3}
-                        strokeColor={currentColor}
-                        className="mt-2"
-                      />
-                    </>
-                  )}
-                </div>
-                <div>
-                  {!videoUploading ? (
-                    videoTitle &&
-                    videoCategory &&
-                    description &&
-                    videoFile &&
-                    imageFile ? (
-                      <button
-                        type="button"
-                        className="hover:shadow-form w-full rounded-md  py-3 px-8 text-center text-base font-semibold text-white outline-none"
-                        onClick={handleFileUpload}
-                        style={{ background: currentColor }}
-                      >
-                        Send File
-                      </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mt-2">
+                          Video uploading in progress... {videoProgress}%
+                        </p>
+                        <Line
+                          percent={videoProgress}
+                          strokeWidth={3}
+                          strokeColor={currentColor}
+                          className="mt-2"
+                        />
+                      </>
+                    )}
+                  </div>
+                  <div>
+                    {!videoUploading ? (
+                      videoTitle &&
+                        videoCategory &&
+                        description &&
+                        videoFile &&
+                        imageFile ? (
+                        <button
+                          type="button"
+                          className="hover:shadow-form w-full rounded-md  py-3 px-8 text-center text-base font-semibold text-white outline-none"
+                          onClick={handleFileUpload}
+                          style={{ background: currentColor }}
+                        >
+                          Send File
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="hover:shadow-form w-full rounded-md  py-3 px-8 text-center text-base font-semibold text-white outline-none opacity-70 transition ease-in-out duration-150 cursor-not-allowed"
+                          onClick={handleFileUpload}
+                          style={{ background: currentColor }}
+                          disabled
+                        >
+                          Send File
+                        </button>
+                      )
                     ) : (
                       <button
                         type="button"
-                        className="hover:shadow-form w-full rounded-md  py-3 px-8 text-center text-base font-semibold text-white outline-none opacity-70 transition ease-in-out duration-150 cursor-not-allowed"
-                        onClick={handleFileUpload}
-                        style={{ background: currentColor }}
+                        className="w-full inline-flex items-center py-3 px-8 border border-transparent text-base leading-6 font-medium rounded-md justify-center  text-white transition ease-in-out duration-150 cursor-not-allowed"
                         disabled
+                        style={{ background: currentColor }}
                       >
-                        Send File
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Processing
                       </button>
-                    )
-                  ) : (
-                    <button
-                      type="button"
-                      className="w-full inline-flex items-center py-3 px-8 border border-transparent text-base leading-6 font-medium rounded-md justify-center  text-white transition ease-in-out duration-150 cursor-not-allowed"
-                      disabled
-                      style={{ background: currentColor }}
-                    >
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing
-                    </button>
-                  )}
-                </div>
-              </form>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div> :
+            // this form is for uploading youtube videos
+            <div className="flex  flex-col items-center justify-center">
+              <ToastContainer />
+              <div className="flex items-center justify-center flex-col">
+                <label className="mb-3 mt-5 block font-medium text-base">
+                  Enter YouTube video URL:
+                </label>
+                <input className="w-full rounded-md border border-[#e0e0e0]  py-3 px-6 text-base font-medium text-[#6B7280] outline-none bg-[#e7e7e7] focus:border-[#6A64F1] focus:shadow-md"
+                  type="text" value={url} onChange={handleChangeYoutubeVideo} />
+              </div>
+              <button className="hover:shadow-form rounded-md mt-5 mb-5 py-3 px-8 text-center text-base font-semibold bg-blue-800 text-white outline-none opacity-70 transition ease-in-out duration-150 "
+                onClick={handleUploadYoutubeVideo}>UPLOAD</button>
             </div>
-          </div>
+            // end of this ------------------------------------
+          }
+
         </div>
       </div>
     </div>

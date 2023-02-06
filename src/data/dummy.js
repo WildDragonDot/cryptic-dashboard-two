@@ -487,15 +487,15 @@ export const employeesGrid = [
 ];
 
 export const links = [
-  // {
-  //   title: 'Panel',
-  //   links: [
-  //     {
-  //       name: 'Dashboard',
-  //       icon: <RiDashboardFill />,
-  //     },
-  //   ],
-  // },
+  {
+    title: 'Panel',
+    links: [
+      {
+        name: 'Dashboard',
+        icon: <RiDashboardFill />,
+      },
+    ],
+  },
 
   {
     title: 'Videos',
@@ -504,30 +504,32 @@ export const links = [
         name: 'Uploader',
         icon: <RiVideoUploadLine />,
       },
-      // {
-      //   name: 'videos',
-      //   icon: <FaPhotoVideo />,
-      // },
+      {
+        name: 'videos',
+        icon: <FaPhotoVideo />,
+      },
     ],
   },
-  // {
-  //   title: 'User',
-  //   links: [
-  //     {
-  //       name: 'users',
-  //       icon: <IoMdContacts />,
-  //     },
-  //   ],
-  // },
-  // {
-  //   title: 'Donations',
-  //   links: [
-  //     {
-  //       name: 'donation',
-  //       icon: <FaDonate />,
-  //     },
-  //   ],
-  // }  
+
+    {
+    title: 'User',
+    links: [
+      {
+        name: 'users',
+        icon: <IoMdContacts />,
+      },
+    ],
+  },
+  {
+    title: 'Donations',
+    links: [
+      {
+        name: 'donation',
+        icon: <FaDonate />,
+      },
+    ],
+  }  
+
 ];
 
 export const cartData = [

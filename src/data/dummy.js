@@ -510,26 +510,6 @@ export const links = [
       // },
     ],
   },
-<<<<<<< HEAD
-    {
-    title: 'User',
-    links: [
-      {
-        name: 'users',
-        icon: <IoMdContacts />,
-      },
-    ],
-  },
-  {
-    title: 'Donations',
-    links: [
-      {
-        name: 'donation',
-        icon: <FaDonate />,
-      },
-    ],
-  }  
-=======
   // {
   //   title: 'User',
   //   links: [
@@ -548,7 +528,6 @@ export const links = [
   //     },
   //   ],
   // }  
->>>>>>> 3231190e6a4307692eae57846338c234e35ffa7d
 ];
 
 export const cartData = [

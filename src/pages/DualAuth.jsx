@@ -67,7 +67,7 @@ const DualAuth = () => {
 
   return (
     <div className="relative min-h-screen flex ">
-      <div className="flex flex-col sm:flex-row items-center md:items-start sm:justify-center md:justify-start flex-auto min-w-0 bg-white">
+      <div className="flex flex-col sm:flex-row items-center md:items-start sm:justify-center md:justify-start flex-auto min-w-0 bg-slate-900">
         <div
           className="sm:w-1/2 xl:w-3/5 h-full hidden md:flex flex-auto items-center justify-center p-10 overflow-hidden bg-purple-900 text-white bg-no-repeat bg-cover relative"
           style={{
@@ -116,19 +116,17 @@ const DualAuth = () => {
                   <label htmlFor="username" className="sr-only">
                     Username
                   </label>
-
                   <input
                     id="username"
                     name="username"
                     type="text"
                     autoComplete="username"
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    requireds
+                    className="appearance-none  rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 bg-slate-700 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                     placeholder="Username"
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
-
                 <div className="my-4">
                   <label htmlFor="password" className="sr-only">
                     Password

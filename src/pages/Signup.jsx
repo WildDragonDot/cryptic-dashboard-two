@@ -65,7 +65,7 @@ const Signup = () => {
                             </h2>
                             <p className="mt-2 text-sm text-gray-500">Please Connect with your account</p>
                         </div>
-                        <div className="flex flex-row justify-center items-center space-x-3">
+                        <div className="flex flex-row justify-center items-center space-x-3 bg-slate-200 w-60 m-auto rounded-2xl">
                             <a href="https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en" target="_blank"
                                 className="w-40 h-11 items-center justify-center inline-flex rounded-2xl font-bold text-lg  text-white hover:shadow-lg cursor-pointer transition ease-in duration-300"><img
                                     src="https://1000logos.net/wp-content/uploads/2022/05/MetaMask-Emblem.png"
